@@ -78,7 +78,7 @@ class ParametersLogger:
 
     def __call__(self, optimizer: base.Optimizer, candidate: p.Parameter, value: float) -> None:
         data = {"#instrumentation": optimizer.instrumentation.name,
-                "#name": optimizer.name,
+                "#optimizer": optimizer.name,
                 "#session": self._session,
                 "#num-ask": optimizer.num_ask,
                 "#num-tell": optimizer.num_tell,
@@ -87,6 +87,10 @@ class ParametersLogger:
                 "#generation": candidate.generation,
                 "#parents_uids": [],
                 "#loss": value}
+        if hasattr(optimizer, "_parameters"):
+            configopt = optimizer._parameters  # type: ignore
+            if isinstance(configopt, base.ParametrizedFamily):
+                data.update({"#optimizer#" + x: y for x, y in configopt.config().items()})
         if candidate.generation > 1:
             data["#parents_uids"] = candidate.parents_uids
         for name, param in helpers.flatten_parameter(candidate, with_containers=False, order=1).items():

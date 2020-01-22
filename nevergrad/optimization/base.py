@@ -596,6 +596,9 @@ class ParametrizedFamily(OptimizerFamily):
         different = {x: self.__dict__[x] for x, y in defaults.items() if y != self.__dict__[x] and not x.startswith("_")}
         super().__init__(**different)
 
+    def config(self) -> tp.Dict[str, tp.Any]:
+        return {x: y for x, y in self.__dict__.items() if not x.startswith("_")}
+
     def __call__(
         self, instrumentation: IntOrParameter, budget: Optional[int] = None, num_workers: int = 1
     ) -> Optimizer:
