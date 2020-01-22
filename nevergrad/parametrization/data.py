@@ -306,6 +306,9 @@ class Array(core.Parameter):
         all_p = [self] + list(others)
         if recomb == "average":
             self.set_standardized_data(np.mean([p.get_standardized_data(reference=self) for p in all_p], axis=0), deterministic=False)
+        # if recomb == "replace":
+        #     self.set_standardized_data(self.random_state.choice(all_p).get_standardized_data(reference=self),
+        #                                reference=self, deterministic=False)
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
 

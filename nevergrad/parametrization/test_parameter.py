@@ -171,18 +171,6 @@ def test_parameter_names(param: par.Parameter, name: str) -> None:
 
 
 @pytest.mark.parametrize(  # type: ignore
-    "param,classes",
-    [(par.Array(shape=(2, 2)), [par.Array]),
-     (par.Tuple(12), [par.Tuple, Constant]),
-     (par.Instrumentation(par.Array(shape=(2,))), [par.Instrumentation, par.Tuple, par.Array, par.Dict]),
-     ]
-)
-def test_list_parameter_instances(param: par.Parameter, classes: tp.List[tp.Type[par.Parameter]]) -> None:
-    outputs = [x.__class__ for x in helpers.list_parameter_instances(param)]
-    assert outputs == classes
-
-
-@pytest.mark.parametrize(  # type: ignore
     "param,continuous,deterministic,ordered",
     [(par.Array(shape=(2, 2)), True, True, True),
      (par.Choice([True, False]), True, False, False),

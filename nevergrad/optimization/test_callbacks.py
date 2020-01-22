@@ -24,16 +24,16 @@ def test_log_parameters(tmp_path: Path) -> None:
                                    blublu=ng.p.Choice(cases),
                                    array=ng.p.Array(shape=(3, 2)))
     optimizer = optimizerlib.OnePlusOne(instrumentation=instrum, budget=32)
-    optimizer.register_callback("tell", callbacks.ParametersLogger(filepath, delete_existing_file=True))
+    optimizer.register_callback("tell", callbacks.ParametersLogger(filepath, append=False))
     optimizer.minimize(_func, verbosity=2)
     # pickling
     logger = callbacks.ParametersLogger(filepath)
     logs = logger.load_flattened()
     assert len(logs) == 32
-    assert isinstance(logs[-1]["#arg1"], float)
-    assert len(logs[-1]) == 18
+    assert isinstance(logs[-1]["1"], float)
+    assert len(logs[-1]) == 29
     logs = logger.load_flattened(max_list_elements=2)
-    assert len(logs[-1]) == 14
+    assert len(logs[-1]) == 21
     # deletion
-    logger = callbacks.ParametersLogger(filepath, delete_existing_file=True)
+    logger = callbacks.ParametersLogger(filepath, append=False)
     assert not logger.load()
