@@ -220,6 +220,12 @@ class Array(core.Parameter):
                               "you should aim for at least 3 for better quality.")
         return self
 
+    def set_recombination(self: A, recombination: tp.Union[str, core.Parameter]) -> A:
+        assert self._parameters is not None
+        self._parameters._content["recombination"] = (recombination if isinstance(recombination, core.Parameter)
+                                                      else core.Constant(recombination))
+        return self
+
     def set_mutation(self: A, sigma: tp.Optional[tp.Union[float, "Array"]] = None, exponent: tp.Optional[float] = None) -> A:
         """Output will be cast to integer(s) through deterministic rounding.
 
@@ -307,8 +313,8 @@ class Array(core.Parameter):
         recomb = self.parameters["recombination"].value
         all_p = [self] + list(others)
         if recomb == "average":
-            #     self.set_standardized_data(np.mean([p.get_standardized_data(reference=self) for p in all_p], axis=0), deterministic=False)
-            # if recomb == "replace":
+            self.set_standardized_data(np.mean([p.get_standardized_data(reference=self) for p in all_p], axis=0), deterministic=False)
+        if recomb == "crossover":
             self.set_standardized_data(self.random_state.choice(all_p).get_standardized_data(reference=self),
                                        reference=self, deterministic=False)
         else:

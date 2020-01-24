@@ -10,6 +10,7 @@ from nevergrad.parametrization import parameter as p
 from nevergrad.common import tools
 from nevergrad.common.typetools import ArrayLike
 from .base import ExperimentFunction
+from .multiobjective import MultiobjectiveFunction
 from . import utils
 from . import corefuncs
 
@@ -220,3 +221,38 @@ def _noisy_call(x: np.ndarray, transf: Callable[[np.ndarray], np.ndarray], func:
                 noise_level *= (1. + x_transf.ravel()[0] * 100.)
             noise = noise_level * np.random.normal(0, 1) * (func(side_point) - fx)
     return fx + noise
+
+
+class FarOptimumFunction(ExperimentFunction):
+    """Very simple 2D norm-1 function with optimal value at (x_optimum, 100)
+    """
+
+    def __init__(
+            self,
+            initial_sigma: float = 1.0,
+            independent_sigma: bool = True,
+            mutable_sigma: bool = True,
+            multiobjective: bool = False,
+            x_optimum: float = 80.0,
+    ) -> None:
+        self._optimum = np.array([x_optimum, 100.0])
+        parametrization = p.Array(shape=(2,), mutable_sigma=mutable_sigma)
+        init = np.array([initial_sigma, initial_sigma] if independent_sigma else [initial_sigma], dtype=float)
+        parametrization.set_mutation(
+            sigma=p.Array(init=init).set_mutation(exponent=1.2) if mutable_sigma else p.Constant(init)
+        )  # type: ignore
+        self._multiobjective = MultiobjectiveFunction(self._multifunc, 2 * self._optimum)
+        super().__init__(self._multiobjective if multiobjective else self._monofunc, parametrization)  # type: ignore
+        descr = dict(initial_sigma=initial_sigma, independent_sigma=independent_sigma, mutable_sigma=mutable_sigma,
+                     multiobjective=multiobjective, x_optimum=x_optimum)
+        self._descriptors.update(descr)
+        self.register_initialization(**descr)
+
+    def _multifunc(self, x: np.ndarray) -> np.ndarray:
+        return np.abs(x - self._optimum)  # type: ignore
+
+    def _monofunc(self, x: np.ndarray) -> float:
+        return float(np.sum(self._multifunc(x)))
+
+    def evalution_function(self, x: np.ndarray) -> float:
+        return self._monofunc(x)
