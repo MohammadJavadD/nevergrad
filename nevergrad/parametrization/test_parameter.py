@@ -7,10 +7,8 @@ import pickle
 import typing as tp
 import pytest
 import numpy as np
-from .core import Constant
 from . import utils
 from . import parameter as par
-from . import helpers
 
 
 def test_array_basics() -> None:
@@ -104,6 +102,7 @@ def check_parameter_features(param: par.Parameter) -> None:
         assert not np.any(param.get_standardized_data(reference=child))
     if mutable:
         param.recombine(child, child)
+        param.recombine()  # empty should work, for simplicity's sake
     # constraints
     param.register_cheap_constraint(_true)
     with pytest.warns(UserWarning):
