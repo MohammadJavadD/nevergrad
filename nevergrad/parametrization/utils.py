@@ -10,12 +10,13 @@ import tempfile
 import subprocess
 import typing as tp
 from pathlib import Path
+import numpy as np
 
 
 class Descriptors:
     """Provides access to a set of descriptors for the parametrization
     This can be used within optimizers.
-    """
+    """  # TODO add repr
 
     # pylint: disable=too-many-arguments
     def __init__(
@@ -143,3 +144,23 @@ class CommandFunction:
                 subprocess_error = subprocess.CalledProcessError(retcode, process.args, output=stdout, stderr=stderr)
                 raise FailedJobError(stderr.decode()) from subprocess_error
         return stdout
+
+
+class Crossover:
+
+    def __init__(self, num_points: int = 0, structured_dimensions: tp.Iterable[int] = ()) -> None:
+        self.num_points = num_points
+        self.structured_dimensions = sorted(structured_dimensions)
+
+    def apply(self, arrays: tp.Sequence[np.ndarray], rng: tp.Optional[np.random.RandomState] = None) -> np.ndarray:
+        if rng is None:
+            rng = np.random.RandomState()
+        shape = tuple(d for k, d in enumerate(arrays[0].shape) if k not in self.structured_dimensions)
+        choices = np.zeros(shape)
+        if not self.num_points:
+            choices = rng.randint(0, len(arrays), size=choices.shape)
+        else:
+            raise NotImplementedError
+        for d in self.structured_dimensions:
+            choices = np.expand_dims(choices, d)
+        return np.choose(choices, arrays)  # type:ignore
