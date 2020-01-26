@@ -247,7 +247,7 @@ class FarOptimumFunction(ExperimentFunction):
         )
         parametrization.set_recombination("average" if recombination == "average" else putils.Crossover())
         self._multiobjective = MultiobjectiveFunction(self._multifunc, 2 * self._optimum)
-        super().__init__(self._multiobjective if multiobjective else self._monofunc, parametrization)  # type: ignore
+        super().__init__(self._multiobjective if multiobjective else self._monofunc, parametrization.set_name(""))  # type: ignore
         descr = dict(independent_sigma=independent_sigma, mutable_sigma=mutable_sigma,
                      multiobjective=multiobjective, optimum=optimum, recombination=recombination)
         self._descriptors.update(descr)
