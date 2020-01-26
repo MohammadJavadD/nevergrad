@@ -7,6 +7,7 @@ import hashlib
 from typing import List, Any, Callable
 import numpy as np
 from nevergrad.parametrization import parameter as p
+from nevergrad.parametrization import utils as putils
 from nevergrad.common import tools
 from nevergrad.common.typetools import ArrayLike
 from .base import ExperimentFunction
@@ -227,20 +228,24 @@ class FarOptimumFunction(ExperimentFunction):
     """Very simple 2D norm-1 function with optimal value at (x_optimum, 100)
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
             self,
             initial_sigma: float = 1.0,
             independent_sigma: bool = True,
             mutable_sigma: bool = True,
             multiobjective: bool = False,
+            recombination: str = "crossover",
             x_optimum: float = 80.0,
     ) -> None:
+        assert recombination in ("crossover", "average")
         self._optimum = np.array([x_optimum, 100.0])
         parametrization = p.Array(shape=(2,), mutable_sigma=mutable_sigma)
         init = np.array([initial_sigma, initial_sigma] if independent_sigma else [initial_sigma], dtype=float)
         parametrization.set_mutation(
-            sigma=p.Array(init=init).set_mutation(exponent=1.2) if mutable_sigma else p.Constant(init)
-        )  # type: ignore
+            sigma=p.Array(init=init).set_mutation(exponent=1.2) if mutable_sigma else p.Constant(init)  # type: ignore
+        )
+        parametrization.set_recombination("average" if recombination == "average" else putils.Crossover())
         self._multiobjective = MultiobjectiveFunction(self._multifunc, 2 * self._optimum)
         super().__init__(self._multiobjective if multiobjective else self._monofunc, parametrization)  # type: ignore
         descr = dict(initial_sigma=initial_sigma, independent_sigma=independent_sigma, mutable_sigma=mutable_sigma,
