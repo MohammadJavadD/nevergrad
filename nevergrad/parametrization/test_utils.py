@@ -9,6 +9,7 @@ import time
 import contextlib
 import typing as tp
 from pathlib import Path
+import numpy as np
 from nevergrad.common import testing
 from . import parameter as p
 from . import utils
@@ -68,6 +69,15 @@ def test_flatten_parameter_order(order: int, keys: tp.Iterable[str]) -> None:
     param = p.Choice([p.Dict(x=p.Scalar(), y=12), p.Scalar().sigma.set_mutation(sigma=p.Scalar())])
     flat = helpers.flatten_parameter(param, with_containers=False, order=order)
     assert set(flat) == set(keys), f"Unexpected flattened parameter: {flat}"
+
+
+def test_crossover() -> None:
+    x1 = 4 * np.ones((2, 3))
+    x2 = 5 * np.ones((2, 3))
+    co = utils.Crossover(0, (0,))
+    out = co.apply((x1, x2), rng=np.random.RandomState(12))
+    expected = np.ones((2, 1)).dot([[5, 5, 4]])
+    np.testing.assert_array_equal(out, expected)
 
 
 def do_nothing(*args: tp.Any, **kwargs: tp.Any) -> int:
