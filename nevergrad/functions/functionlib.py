@@ -4,7 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 import hashlib
-from typing import List, Any, Callable
+import itertools
+import typing as tp
 import numpy as np
 from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization import utils as putils
@@ -24,7 +25,7 @@ class ArtificialVariable:
     def __init__(self, dimension: int, num_blocks: int, block_dimension: int,
                  translation_factor: float, rotation: bool, hashing: bool, only_index_transform: bool) -> None:
         self._dimension = dimension
-        self._transforms: List[utils.Transform] = []
+        self._transforms: tp.List[utils.Transform] = []
         self.rotation = rotation
         self.translation_factor = translation_factor
         self.num_blocks = num_blocks
@@ -165,7 +166,7 @@ class ArtificialFunction(ExperimentFunction):
         return self._dimension  # bypass the instrumentation one (because of the "hashing" case)  # TODO: remove
 
     @staticmethod
-    def list_sorted_function_names() -> List[str]:
+    def list_sorted_function_names() -> tp.List[str]:
         """Returns a sorted list of function names that can be used for the blocks
         """
         return sorted(corefuncs.registry)
@@ -183,7 +184,7 @@ class ArtificialFunction(ExperimentFunction):
             results.append(self._func(block))
         return float(self._aggregator(results))
 
-    def evaluation_function(self, *args: Any, **kwargs: Any) -> float:
+    def evaluation_function(self, *args: tp.Any, **kwargs: tp.Any) -> float:
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
@@ -195,7 +196,7 @@ class ArtificialFunction(ExperimentFunction):
         return _noisy_call(x=np.array(x, copy=False), transf=self._transform, func=self.function_from_transform,
                            noise_level=self._parameters["noise_level"], noise_dissymmetry=self._parameters["noise_dissymmetry"])
 
-    def compute_pseudotime(self, input_parameter: Any, value: float) -> float:
+    def compute_pseudotime(self, input_parameter: tp.Any, value: float) -> float:
         """Delay before returning results in steady state mode benchmarks (fake execution time)
         """
         args, kwargs = input_parameter
@@ -210,7 +211,7 @@ class ArtificialFunction(ExperimentFunction):
         return 1.
 
 
-def _noisy_call(x: np.ndarray, transf: Callable[[np.ndarray], np.ndarray], func: Callable[[np.ndarray], float],
+def _noisy_call(x: np.ndarray, transf: tp.Callable[[np.ndarray], np.ndarray], func: tp.Callable[[np.ndarray], float],
                 noise_level: float, noise_dissymmetry: bool) -> float:  # pylint: disable=unused-argument
     x_transf = transf(x)
     fx = func(x_transf)
@@ -231,25 +232,24 @@ class FarOptimumFunction(ExperimentFunction):
     # pylint: disable=too-many-arguments
     def __init__(
             self,
-            initial_sigma: float = 1.0,
             independent_sigma: bool = True,
             mutable_sigma: bool = True,
             multiobjective: bool = False,
             recombination: str = "crossover",
-            x_optimum: float = 80.0,
+            optimum: tp.Tuple[int, int] = (80, 100)
     ) -> None:
         assert recombination in ("crossover", "average")
-        self._optimum = np.array([x_optimum, 100.0])
+        self._optimum = np.array(optimum, dtype=float)
         parametrization = p.Array(shape=(2,), mutable_sigma=mutable_sigma)
-        init = np.array([initial_sigma, initial_sigma] if independent_sigma else [initial_sigma], dtype=float)
+        init = np.array([1.0, 1.0] if independent_sigma else [1.0], dtype=float)
         parametrization.set_mutation(
             sigma=p.Array(init=init).set_mutation(exponent=1.2) if mutable_sigma else p.Constant(init)  # type: ignore
         )
         parametrization.set_recombination("average" if recombination == "average" else putils.Crossover())
         self._multiobjective = MultiobjectiveFunction(self._multifunc, 2 * self._optimum)
         super().__init__(self._multiobjective if multiobjective else self._monofunc, parametrization)  # type: ignore
-        descr = dict(initial_sigma=initial_sigma, independent_sigma=independent_sigma, mutable_sigma=mutable_sigma,
-                     multiobjective=multiobjective, x_optimum=x_optimum)
+        descr = dict(independent_sigma=independent_sigma, mutable_sigma=mutable_sigma,
+                     multiobjective=multiobjective, optimum=optimum, recombination=recombination)
         self._descriptors.update(descr)
         self.register_initialization(**descr)
 
@@ -261,3 +261,16 @@ class FarOptimumFunction(ExperimentFunction):
 
     def evalution_function(self, x: np.ndarray) -> float:
         return self._monofunc(x)
+
+    @classmethod
+    def itercases(cls) -> tp.Iterator["FarOptimumFunction"]:
+        options = dict(independent_sigma=[True, False],
+                       mutable_sigma=[True, False],
+                       multiobjective=[True, False],
+                       recombination=["average", "crossover"],
+                       optimum=[(.8, 1), (80, 100), (.8, 100)]
+                       )
+        keys = sorted(options)
+        select = itertools.product(*(options[k] for k in keys))  # type: ignore
+        cases = (dict(zip(keys, s)) for s in select)
+        return (cls(**c) for c in cases)

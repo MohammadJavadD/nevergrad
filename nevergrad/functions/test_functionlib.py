@@ -155,7 +155,7 @@ def test_noisy_call(x: int, noise: bool, noise_dissymmetry: bool, expect_noisy: 
 @pytest.mark.parametrize("independent_sigma", [True, False])  # type: ignore
 @pytest.mark.parametrize("mutable_sigma", [True, False])  # type: ignore
 def test_far_optimum_function(independent_sigma: bool, mutable_sigma: bool) -> None:
-    func = functionlib.FarOptimumFunction(initial_sigma=2.0, independent_sigma=independent_sigma, mutable_sigma=mutable_sigma).copy()
+    func = functionlib.FarOptimumFunction(independent_sigma=independent_sigma, mutable_sigma=mutable_sigma).copy()
     param = func.parametrization.spawn_child()
     assert isinstance(param, p.Array)
     assert isinstance(param.sigma, p.Array) == mutable_sigma
@@ -165,3 +165,8 @@ def test_far_optimum_function(independent_sigma: bool, mutable_sigma: bool) -> N
     assert bool(np.sum(np.abs(new_val - func.parametrization.sigma.value))) == mutable_sigma  # type: ignore
     if independent_sigma and mutable_sigma:
         assert new_val[0] != new_val[1]
+
+
+def test_far_optimum_function_cases() -> None:
+    cases = list(functionlib.FarOptimumFunction.itercases())
+    assert len(cases) == 48
