@@ -80,6 +80,32 @@ def test_crossover() -> None:
     np.testing.assert_array_equal(out, expected)
 
 
+@testing.parametrized(
+    p2i2=(42, 2, 2, [0, 0, 1, 1, 1, 0]),
+    p5i6=(42, 5, 6, [3, 0, 1, 2, 5, 4]),
+    p1i2=(42, 1, 2, [0, 0, 1, 1, 1, 1]),
+    p2i3=(42, 2, 3, [1, 1, 2, 2, 2, 0]),
+)
+def test_kpoint_crossover(seed: int, points: int, indiv: int, expected: tp.List[int]) -> None:
+    rng = np.random.RandomState(seed)
+    crossover = utils.Crossover(points)
+    donors = [k * np.ones(len(expected)) for k in range(indiv)]
+    output = crossover.apply(donors, rng)
+    np.testing.assert_array_equal(output, expected)
+
+
+@testing.parametrized(
+    small=(1, 5, [0]),
+    keep_first=(2, 1000, [0, 871]),
+    two_points=(3, 2, [0, 1, 0]),
+    two_points_big=(3, 1000, [518, 871, 0]),
+)
+def test_make_crossover_sequence(num_sections: int, num_individuals: int, expected: tp.List[int]) -> None:
+    rng = np.random.RandomState(12)
+    out = utils._make_crossover_sequence(num_sections=num_sections, num_individuals=num_individuals, rng=rng)
+    assert out == expected
+
+
 def do_nothing(*args: tp.Any, **kwargs: tp.Any) -> int:
     print("my args", args, flush=True)
     print("my kwargs", kwargs, flush=True)

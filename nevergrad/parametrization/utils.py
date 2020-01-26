@@ -146,6 +146,20 @@ class CommandFunction:
         return stdout
 
 
+def _make_crossover_sequence(num_sections: int, num_individuals: int, rng: np.random.RandomState) -> tp.List[int]:
+    assert num_individuals > 1
+    indices = rng.permutation(num_individuals).tolist()
+    while len(indices) < num_sections:
+        new_indices = rng.permutation(num_individuals).tolist()
+        if new_indices[0] == indices[-1]:
+            new_indices[0], new_indices[-1] = new_indices[-1], new_indices[0]
+        indices.extend(new_indices)
+    indices = indices[:num_sections]
+    if 0 not in indices:
+        indices[np.random.randint(num_sections)] = 0  # always involve first element
+    return indices  # type: ignore
+
+
 class Crossover:
 
     def __init__(self, num_points: int = 0, structured_dimensions: tp.Iterable[int] = ()) -> None:
@@ -156,9 +170,15 @@ class Crossover:
         if rng is None:
             rng = np.random.RandomState()
         shape = tuple(d for k, d in enumerate(arrays[0].shape) if k not in self.structured_dimensions)
-        choices = np.zeros(shape)
+        choices = np.zeros(shape, dtype=int)
         if not self.num_points:
             choices = rng.randint(0, len(arrays), size=choices.shape)
+        elif choices.ndim == 1:
+            bounds = sorted(rng.choice(shape[0] - 1, size=self.num_points, replace=False).tolist())  # 0 to n - 2
+            bounds = [0] + [1 + b for b in bounds] + [shape[0]]
+            indices = _make_crossover_sequence(len(bounds) - 1, len(arrays), rng)
+            for start, end, index in zip(bounds[:-1], bounds[1:], indices):
+                choices[start:end] = index
         else:
             raise NotImplementedError
         for d in self.structured_dimensions:
