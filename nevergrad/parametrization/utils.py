@@ -7,6 +7,7 @@ import os
 import sys
 import shutil
 import tempfile
+import warnings
 import subprocess
 import typing as tp
 from pathlib import Path
@@ -166,13 +167,21 @@ class Crossover:
         self.num_points = num_points
         self.structured_dimensions = sorted(structured_dimensions)
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.num_points}, {self.structured_dimensions})"
+
     def apply(self, arrays: tp.Sequence[np.ndarray], rng: tp.Optional[np.random.RandomState] = None) -> np.ndarray:
+        if len(arrays) > 30:
+            warnings.warn("Crossover can only handle up to 30 arrays")
+            arrays = arrays[:30]
         if rng is None:
             rng = np.random.RandomState()
         shape = tuple(d for k, d in enumerate(arrays[0].shape) if k not in self.structured_dimensions)
         choices = np.zeros(shape, dtype=int)
         if not self.num_points:
             choices = rng.randint(0, len(arrays), size=choices.shape)
+            if 0 not in choices:
+                choices.ravel()[rng.randint(choices.size)] = 0  # always involve first element
         elif choices.ndim == 1:
             bounds = sorted(rng.choice(shape[0] - 1, size=self.num_points, replace=False).tolist())  # 0 to n - 2
             bounds = [0] + [1 + b for b in bounds] + [shape[0]]

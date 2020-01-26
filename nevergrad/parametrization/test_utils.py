@@ -80,6 +80,13 @@ def test_crossover() -> None:
     np.testing.assert_array_equal(out, expected)
 
 
+def test_random_crossover() -> None:
+    arrays = [k * np.ones((2, 2)) for k in range(31)]
+    co = utils.Crossover(0)
+    out = co.apply(arrays)
+    assert 0 in out
+
+
 @testing.parametrized(
     p2i2=(42, 2, 2, [0, 0, 1, 1, 1, 0]),
     p5i6=(42, 5, 6, [3, 0, 1, 2, 5, 4]),
