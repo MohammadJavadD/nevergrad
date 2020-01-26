@@ -156,7 +156,7 @@ def _make_crossover_sequence(num_sections: int, num_individuals: int, rng: np.ra
         indices.extend(new_indices)
     indices = indices[:num_sections]
     if 0 not in indices:
-        indices[np.random.randint(num_sections)] = 0  # always involve first element
+        indices[rng.randint(num_sections)] = 0  # always involve first element
     return indices  # type: ignore
 
 
