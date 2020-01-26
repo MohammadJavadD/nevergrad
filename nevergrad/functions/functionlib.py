@@ -259,7 +259,7 @@ class FarOptimumFunction(ExperimentFunction):
     def _monofunc(self, x: np.ndarray) -> float:
         return float(np.sum(self._multifunc(x)))
 
-    def evalution_function(self, x: np.ndarray) -> float:
+    def evaluation_function(self, x: np.ndarray) -> float:
         return self._monofunc(x)
 
     @classmethod
